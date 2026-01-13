@@ -7,6 +7,7 @@ import { EVMProvider } from '@/components/EVMProvider'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { customChains } from '@/constants/custom-chains'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { findItemInCollections } from '@/lib/collections'
 import { cn } from '@/lib/utils'
@@ -74,7 +75,10 @@ export function EVM() {
 
   useEffect(() => {
     if (chains) {
-      setChains(chains)
+      // Filter only supported chains: BSC (56), BSC Testnet (97), Ronin (2020)
+      const supportedChainIds = [56, 97, 2020]
+      const filteredChains = chains.filter((chain) => supportedChainIds.includes(chain.chainId))
+      setChains([...filteredChains, ...customChains])
     }
   }, [chains, setChains])
 
