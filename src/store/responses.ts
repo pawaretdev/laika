@@ -5,9 +5,11 @@ export interface Response {
   functionName: string
   chainId: number
   address: `0x${string}`
+  args?: unknown[]
   result?: string
   txHash?: `0x${string}`
   error?: Error
+  timestamp?: number
 }
 
 export const useResponseStore = create<{
@@ -16,6 +18,9 @@ export const useResponseStore = create<{
   clearResponses: () => void
 }>((set) => ({
   responses: [],
-  pushResponse: (response) => set((state) => ({ responses: [...state.responses, response] })),
+  pushResponse: (response) =>
+    set((state) => ({
+      responses: [...state.responses, { ...response, timestamp: Date.now() }],
+    })),
   clearResponses: () => set(() => ({ responses: [] })),
 }))

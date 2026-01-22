@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { RotateCwIcon, ScanSearchIcon } from 'lucide-react'
 import type { Address } from 'viem'
 import { mainnet } from 'viem/chains'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { parseContractArgs } from '@/lib/utils'
 import type { EVMABIMethod, EVMABIMethodInputsOutputs } from '@/store/collections'
 import { useResponseStore } from '@/store/responses'
 
@@ -25,11 +26,15 @@ export function ReadMethod({
   const [args, setArgs] = useState<Array<string>>(new Array(abi.inputs.length).fill(''))
   const { pushResponse } = useResponseStore()
 
+  const parsedArgs = useMemo(() => {
+    return parseContractArgs(args, abi.inputs)
+  }, [args, abi.inputs])
+
   const { data, error, isRefetching, isFetchedAfterMount, refetch } = useReadContract({
     address: contractAddress,
     abi: [abi],
     functionName,
-    args,
+    args: parsedArgs,
     chainId: chainId ? chainId : mainnet.id,
     query: {
       enabled: false,
@@ -42,25 +47,29 @@ export function ReadMethod({
 
   useEffect(() => {
     if (isFetchedAfterMount && !isRefetching) {
+      const targetChainId = chainId ? chainId : mainnet.id
       if (error) {
+        console.error('[ReadMethod] Error:', error)
         return pushResponse({
           type: 'READ',
           functionName,
-          chainId: chainId ? chainId : mainnet.id,
+          chainId: targetChainId,
           address: contractAddress,
+          args: parsedArgs,
           error,
         })
       }
-
+      console.log('[ReadMethod] Success, result:', data)
       return pushResponse({
         type: 'READ',
         functionName,
-        chainId: chainId ? chainId : mainnet.id,
+        chainId: targetChainId,
         address: contractAddress,
+        args: parsedArgs,
         result: JSON.stringify(data?.toString()),
       })
     }
-  }, [chainId, contractAddress, data, error, functionName, isFetchedAfterMount, isRefetching, pushResponse])
+  }, [chainId, contractAddress, data, error, functionName, isFetchedAfterMount, isRefetching, parsedArgs, pushResponse])
 
   return (
     <Card size="sm">
@@ -77,12 +86,15 @@ export function ReadMethod({
                   newArgs[idx] = event.target.value
                   setArgs(newArgs)
                 }
+                const placeholder = field.type.endsWith('[]')
+                  ? `${field.type} (e.g., ["value1", "value2"] or value1, value2)`
+                  : field.type
                 return (
                   <div key={`${field.type}-${field.name}-${idx}`} className="flex flex-col space-y-1.5">
                     <Label htmlFor={`readInput-${idx}`}>{`${field.type} ${field.name}`}</Label>
                     <Input
                       id={`readInput-${idx}`}
-                      placeholder={field.type}
+                      placeholder={placeholder}
                       value={args[idx] || ''}
                       onChange={handleInputChange}
                     />
