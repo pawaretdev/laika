@@ -78,7 +78,10 @@ export function EVM() {
       // Filter only supported chains: BSC (56), BSC Testnet (97), Ronin (2020)
       const supportedChainIds = [56, 97, 2020]
       const filteredChains = chains.filter((chain) => supportedChainIds.includes(chain.chainId))
-      setChains([...filteredChains, ...customChains])
+      // Custom chains take priority - exclude chainlist.org chains that have matching chainId in customChains
+      const customChainIds = new Set(customChains.map((c) => c.chainId))
+      const chainsWithoutDuplicates = filteredChains.filter((chain) => !customChainIds.has(chain.chainId))
+      setChains([...customChains, ...chainsWithoutDuplicates])
     }
   }, [chains, setChains])
 
